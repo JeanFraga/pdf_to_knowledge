@@ -1,0 +1,45 @@
+# Workflow Status
+# This tracks progress through BMM methodology Analysis, Planning, and Solutioning phases.
+# Implementation phase is tracked separately in sprint-status.yaml
+
+generated: "2025-11-26"
+project: "pdf_to_knowledge"
+description: "Transform dense technical PDF books (300+ pages) into multi-modal knowledge assets using semantic segmentation and agentic chunking with context continuity. Pre-computes downstream needs by producing dual-layer output: structured data for AI agents (featuring visual extraction for infographics and tone preservation for podcasts) and enhanced summaries for human learners."
+project_type: ""
+selected_track: "method"
+field_type: "greenfield"
+workflow_path: ".bmad/bmm/workflows/workflow-status/paths/method-greenfield.yaml"
+workflow_status: |
+  phases:
+    - name: Discovery
+      items:
+        - id: brainstorm-project
+          status: skipped
+        - id: research
+          status: skipped
+        - id: product-brief
+          status: completed
+    - name: Planning
+      items:
+        - id: prd
+          status: completed
+        - id: validate-prd
+          status: optional
+        - id: create-design
+          status: conditional
+    - name: Solutioning
+      items:
+        - id: create-architecture
+          status: completed
+        - id: create-epics-and-stories
+          status: completed
+        - id: test-design
+          status: recommended
+        - id: validate-architecture
+          status: optional
+        - id: implementation-readiness
+          status: completed
+    - name: Implementation
+      items:
+        - id: sprint-planning
+          status: pending
