@@ -78,8 +78,8 @@ pdf_to_knowledge/
 
 ### Core Technologies
 
-*   **Language:** Python 3.11+ (Standard for AI/ADK)
-*   **Agent Framework:** Google ADK
+*   **Language:** Python 3.12 (ADK requires ≥3.10, 3.11+ recommended)
+*   **Agent Framework:** Google ADK 1.21+
 *   **Protocol:** A2A (Agent-to-Agent)
 *   **Databases:**
     *   **Firestore:** Document store for chunks and metadata.

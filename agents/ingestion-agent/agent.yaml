@@ -1,0 +1,19 @@
+name: ingestion-agent
+version: 0.1.0
+description: PDF ingestion and agentic chunking agent
+
+model:
+  provider: google
+  name: gemini-2.0-flash
+
+capabilities:
+  - pdf_parsing
+  - semantic_chunking
+  - context_injection
+
+a2a:
+  endpoints:
+    - name: process_pdf
+      description: Process a PDF file and extract knowledge chunks
+  publishes:
+    - StoreKnowledgeRequest

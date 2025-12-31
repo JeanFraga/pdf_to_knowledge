@@ -1,0 +1,39 @@
+services:
+  ingestion-agent:
+    build:
+      context: ./agents/ingestion-agent
+      dockerfile: Dockerfile
+    container_name: ingestion-agent
+    environment:
+      - ENVIRONMENT=development
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - DATABASE_AGENT_URL=http://database-agent:8080
+    ports:
+      - "8081:8080"
+    volumes:
+      - ./agents/ingestion-agent/src:/app/src:ro
+      - ./shared:/app/shared:ro
+    depends_on:
+      - database-agent
+    networks:
+      - p2k-network
+
+  database-agent:
+    build:
+      context: ./agents/database-agent
+      dockerfile: Dockerfile
+    container_name: database-agent
+    environment:
+      - ENVIRONMENT=development
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+    ports:
+      - "8082:8080"
+    volumes:
+      - ./agents/database-agent/src:/app/src:ro
+      - ./shared:/app/shared:ro
+    networks:
+      - p2k-network
+
+networks:
+  p2k-network:
+    driver: bridge

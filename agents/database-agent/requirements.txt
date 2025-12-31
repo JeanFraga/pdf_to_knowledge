@@ -1,0 +1,14 @@
+# Core
+pydantic>=2.12.5
+pydantic-settings>=2.12.0
+
+# Google ADK (Agent Development Kit)
+google-adk>=1.21.0
+
+# Databases (to be used in future stories)
+# google-cloud-firestore>=2.0.0
+# neo4j>=5.0.0
+
+# Utilities
+python-dotenv>=1.0.1
+structlog>=24.4.0

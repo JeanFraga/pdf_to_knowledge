@@ -1,0 +1,21 @@
+name: database-agent
+version: 0.1.0
+description: Storage and retrieval agent with MCP
+
+model:
+  provider: google
+  name: gemini-2.0-flash
+
+capabilities:
+  - firestore_storage
+  - neo4j_storage
+  - schema_validation
+
+a2a:
+  endpoints:
+    - name: store_knowledge
+      description: Store knowledge chunks in databases
+    - name: get_graph_context
+      description: Retrieve concept relationships from graph
+  subscribes:
+    - StoreKnowledgeRequest
