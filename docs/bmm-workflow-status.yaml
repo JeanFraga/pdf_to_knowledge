@@ -42,4 +42,6 @@ workflow_status: |
     - name: Implementation
       items:
         - id: sprint-planning
-          status: pending
+          status: completed
+        - id: sprint-1
+          status: in-progress

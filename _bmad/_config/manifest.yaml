@@ -1,0 +1,8 @@
+installation:
+  version: 6.0.0-alpha.22
+  installDate: 2025-12-31T18:04:17.181Z
+  lastUpdated: 2025-12-31T18:04:17.181Z
+modules:
+  - core
+  - bmm
+ides: []
