@@ -18,8 +18,8 @@
 | ID | Story | Status | Est. Days | Actual |
 |:---|:------|:-------|:----------|:-------|
 | 1.1 | Project Init & Terraform Setup | ✅ Done | 3-4 | 1 |
-| 1.2 | Local Dev Environment with Gemini | 🔲 Not Started | 2-3 | — |
-| 4.1 | A2A Protocol Definition | 🔲 Not Started | 2-3 | — |
+| 1.2 | Local Dev Environment with Gemini | ✅ Done | 2-3 | 0.5 |
+| 4.1 | A2A Protocol Definition | 🔄 Review | 2-3 | 0.5 |
 
 **Status Legend:** 🔲 Not Started | 🔄 In Progress | ✅ Done | ⛔ Blocked
 

@@ -8,10 +8,17 @@
 # - review: Implementation complete, awaiting code review
 # - done: Story complete and merged
 
-current_sprint: 1
-sprint_goal: "Establish GCP infrastructure foundation, enable local development workflow, and freeze the inter-agent communication contract"
+current_sprint: 2
+sprint_goal: "Enable the Ingestion Agent to extract text and images from PDFs and generate a global context summary for the document"
 
+# Sprint 1 (COMPLETED)
+sprint_1_status:
+  1-1-project-init-terraform: done
+  1-2-local-dev-gemini: done
+  4-1-a2a-protocol-definition: done
+
+# Sprint 2 (CURRENT)
 development_status:
-  1-1-project-init-terraform: review
-  1-2-local-dev-gemini: drafted
-  4-1-a2a-protocol-definition: drafted
+  2-1-pdf-text-extraction: ready-for-dev
+  2-2-image-region-extraction: ready-for-dev
+  3-1-global-context-generation: ready-for-dev

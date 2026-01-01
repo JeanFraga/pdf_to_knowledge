@@ -44,4 +44,6 @@ workflow_status: |
         - id: sprint-planning
           status: completed
         - id: sprint-1
+          status: completed
+        - id: sprint-2
           status: in-progress
