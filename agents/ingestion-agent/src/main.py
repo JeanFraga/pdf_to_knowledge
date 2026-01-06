@@ -3,11 +3,25 @@
 import asyncio
 import logging
 import os
+from pathlib import Path
 
 from google.adk.agents import Agent
 from google.adk.runners import Runner
 from google.adk.sessions import InMemorySessionService
 from google.genai import types
+
+from src.pdf_extractor import PDFExtractor, ExtractionResult
+from src.image_extractor import (
+    ImageExtractor,
+    ImageExtractionResult,
+    ImageMetadata,
+    inject_image_placeholders,
+)
+from src.context_generator import (
+    ContextGenerator,
+    GlobalContext,
+    generate_global_context,
+)
 
 logging.basicConfig(
     level=logging.INFO,
@@ -102,6 +116,147 @@ def main():
         raise
     
     logger.info("Ingestion Agent ready")
+
+
+def process_pdf(pdf_path: str | Path) -> ExtractionResult:
+    """
+    Process a PDF file and extract cleaned text.
+    
+    This is the main entry point for PDF processing in the ingestion pipeline.
+    
+    Args:
+        pdf_path: Path to the PDF file to process
+        
+    Returns:
+        ExtractionResult containing cleaned text, page info, and detected headers/footers
+        
+    Raises:
+        FileNotFoundError: If PDF file doesn't exist
+        ValueError: If file is not a valid PDF
+    """
+    logger.info(f"Processing PDF: {pdf_path}")
+    
+    extractor = PDFExtractor()
+    result = extractor.extract(pdf_path)
+    
+    logger.info(f"Extracted {result.total_pages} pages from {result.source_file}")
+    
+    if result.detected_headers:
+        logger.info(f"Detected {len(result.detected_headers)} repeated headers")
+    if result.detected_footers:
+        logger.info(f"Detected {len(result.detected_footers)} repeated footers")
+    
+    return result
+
+
+def process_pdf_with_images(
+    pdf_path: str | Path,
+    job_id: str | None = None,
+    image_output_dir: str | None = None,
+) -> tuple[ExtractionResult, ImageExtractionResult]:
+    """
+    Process a PDF file, extracting both text and images.
+    
+    This is the comprehensive entry point that:
+    1. Extracts text with header/footer removal
+    2. Extracts images with size filtering
+    3. Injects image placeholders into the text stream
+    
+    Args:
+        pdf_path: Path to the PDF file to process
+        job_id: Optional job ID for organizing image output
+        image_output_dir: Optional base directory for extracted images
+        
+    Returns:
+        Tuple of (ExtractionResult, ImageExtractionResult)
+        The ExtractionResult's full_text will have image placeholders injected
+        
+    Raises:
+        FileNotFoundError: If PDF file doesn't exist
+        ValueError: If file is not a valid PDF
+    """
+    logger.info(f"Processing PDF with images: {pdf_path}")
+    
+    # Step 1: Extract text
+    text_extractor = PDFExtractor()
+    text_result = text_extractor.extract(pdf_path)
+    
+    logger.info(f"Extracted {text_result.total_pages} pages of text")
+    
+    # Step 2: Extract images
+    image_extractor = ImageExtractor(output_dir=image_output_dir) if image_output_dir else ImageExtractor()
+    image_result = image_extractor.extract(pdf_path, job_id=job_id)
+    
+    logger.info(f"Extracted {image_result.total_extracted} images, filtered {image_result.total_filtered} small artifacts")
+    
+    # Step 3: Inject placeholders into text (modifies pages in-place)
+    if image_result.images:
+        for page in text_result.pages:
+            # Get images for this page
+            page_images = [img for img in image_result.images if img.page == page.page_number]
+            if page_images:
+                placeholders = "\n".join(f"[IMAGE: {img.id}]" for img in page_images)
+                page.cleaned_text = f"{page.cleaned_text}\n\n{placeholders}"
+        
+        logger.info(f"Injected placeholders for {len(image_result.images)} images")
+    
+    return text_result, image_result
+
+
+def process_pdf_full(
+    pdf_path: str | Path,
+    job_id: str | None = None,
+    image_output_dir: str | None = None,
+    generate_context: bool = True,
+) -> tuple[ExtractionResult, ImageExtractionResult, GlobalContext | None]:
+    """
+    Full PDF processing pipeline: text, images, and global context.
+    
+    This is the complete ingestion pipeline that:
+    1. Extracts text with header/footer removal
+    2. Extracts images with size filtering
+    3. Injects image placeholders into the text stream
+    4. Generates global context summary via Gemini
+    
+    Args:
+        pdf_path: Path to the PDF file to process
+        job_id: Optional job ID for organizing image output
+        image_output_dir: Optional base directory for extracted images
+        generate_context: Whether to generate global context (default: True)
+        
+    Returns:
+        Tuple of (ExtractionResult, ImageExtractionResult, GlobalContext or None)
+        
+    Raises:
+        FileNotFoundError: If PDF file doesn't exist
+        ValueError: If file is not a valid PDF
+    """
+    pdf_path = Path(pdf_path)
+    logger.info(f"Full PDF processing pipeline: {pdf_path}")
+    
+    # Steps 1-3: Extract text and images
+    text_result, image_result = process_pdf_with_images(
+        pdf_path,
+        job_id=job_id,
+        image_output_dir=image_output_dir,
+    )
+    
+    # Step 4: Generate global context
+    global_context = None
+    if generate_context:
+        try:
+            logger.info("Generating global context via Gemini...")
+            context_generator = ContextGenerator()
+            global_context = context_generator.generate(
+                full_text=text_result.full_text,
+                source_document=str(pdf_path.name),
+            )
+            logger.info(f"Global context generated: {global_context.document_type}, {len(global_context.key_terms)} key terms")
+        except Exception as e:
+            logger.warning(f"Failed to generate global context: {e}")
+            # Continue without context - don't fail the entire pipeline
+    
+    return text_result, image_result, global_context
 
 
 if __name__ == "__main__":

@@ -5,9 +5,9 @@ pydantic-settings>=2.12.0
 # Google ADK (Agent Development Kit)
 google-adk>=1.21.0
 
-# PDF Processing (to be used in future stories)
-# pypdf>=4.0.0
-# pdfminer.six>=20231228
+# PDF Processing
+pypdf>=4.0.0
+Pillow>=10.0.0
 
 # Utilities
 python-dotenv>=1.0.1

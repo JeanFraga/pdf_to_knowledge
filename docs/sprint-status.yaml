@@ -19,6 +19,6 @@ sprint_1_status:
 
 # Sprint 2 (CURRENT)
 development_status:
-  2-1-pdf-text-extraction: ready-for-dev
-  2-2-image-region-extraction: ready-for-dev
-  3-1-global-context-generation: ready-for-dev
+  2-1-pdf-text-extraction: done
+  2-2-image-region-extraction: done
+  3-1-global-context-generation: done

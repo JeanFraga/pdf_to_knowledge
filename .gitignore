@@ -39,6 +39,14 @@ Thumbs.db
 htmlcov/
 .pytest_cache/
 
+# Integration test fixtures (user-provided PDFs may be copyright protected)
+agents/ingestion-agent/tests/integration/fixtures/*
+!agents/ingestion-agent/tests/integration/fixtures/.gitkeep
+!agents/ingestion-agent/tests/integration/fixtures/README.md
+
+# Integration test output (extracted text, logs)
+agents/ingestion-agent/tests/integration/output/
+
 # Build
 dist/
 build/

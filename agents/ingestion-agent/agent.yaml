@@ -4,7 +4,7 @@ description: PDF ingestion and agentic chunking agent
 
 model:
   provider: google
-  name: gemini-2.0-flash
+  name: gemini-2.5-flash
 
 capabilities:
   - pdf_parsing
