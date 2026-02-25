@@ -66,9 +66,9 @@ development_status:
   4-3-neo4j-graph-storage: backlog
   epic-4-retrospective: optional
 
-  # Epic 5: Visual & Tone Extraction
+  # Epic 5: Visual & Tone Enrichment
   epic-5: backlog
-  5-1-visual-description-agent: backlog
+  5-1-visual-description-generation: backlog
   5-2-tone-analysis-preservation: backlog
   epic-5-retrospective: optional
 
