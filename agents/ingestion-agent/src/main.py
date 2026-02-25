@@ -10,9 +10,8 @@ from google.adk.runners import Runner
 from google.adk.sessions import InMemorySessionService
 from google.genai import types
 
-from src.pdf_extractor import PDFExtractor, ExtractionResult
+from src.pdf_extractor import ExtractionResult
 from src.image_extractor import (
-    ImageExtractor,
     ImageExtractionResult,
     ImageMetadata,
     inject_image_placeholders,
@@ -22,6 +21,7 @@ from src.context_generator import (
     GlobalContext,
     generate_global_context,
 )
+from src.extraction_backend import get_extraction_backend, ExtractionBackend
 
 logging.basicConfig(
     level=logging.INFO,
@@ -118,14 +118,17 @@ def main():
     logger.info("Ingestion Agent ready")
 
 
-def process_pdf(pdf_path: str | Path) -> ExtractionResult:
+def process_pdf(pdf_path: str | Path, backend: ExtractionBackend | None = None) -> ExtractionResult:
     """
     Process a PDF file and extract cleaned text.
     
     This is the main entry point for PDF processing in the ingestion pipeline.
+    Uses the configured extraction backend (PDF_EXTRACTOR_BACKEND env var).
     
     Args:
         pdf_path: Path to the PDF file to process
+        backend: Optional extraction backend override. If None, uses
+                 the backend configured via PDF_EXTRACTOR_BACKEND env var.
         
     Returns:
         ExtractionResult containing cleaned text, page info, and detected headers/footers
@@ -136,10 +139,12 @@ def process_pdf(pdf_path: str | Path) -> ExtractionResult:
     """
     logger.info(f"Processing PDF: {pdf_path}")
     
-    extractor = PDFExtractor()
-    result = extractor.extract(pdf_path)
+    if backend is None:
+        backend = get_extraction_backend()
     
-    logger.info(f"Extracted {result.total_pages} pages from {result.source_file}")
+    result = backend.extract_text(pdf_path)
+    
+    logger.info(f"Extracted {result.total_pages} pages from {result.source_file} (backend: {backend.name})")
     
     if result.detected_headers:
         logger.info(f"Detected {len(result.detected_headers)} repeated headers")
@@ -153,6 +158,7 @@ def process_pdf_with_images(
     pdf_path: str | Path,
     job_id: str | None = None,
     image_output_dir: str | None = None,
+    backend: ExtractionBackend | None = None,
 ) -> tuple[ExtractionResult, ImageExtractionResult]:
     """
     Process a PDF file, extracting both text and images.
@@ -162,10 +168,14 @@ def process_pdf_with_images(
     2. Extracts images with size filtering
     3. Injects image placeholders into the text stream
     
+    Uses the configured extraction backend (PDF_EXTRACTOR_BACKEND env var).
+    
     Args:
         pdf_path: Path to the PDF file to process
         job_id: Optional job ID for organizing image output
         image_output_dir: Optional base directory for extracted images
+        backend: Optional extraction backend override. If None, uses
+                 the backend configured via PDF_EXTRACTOR_BACKEND env var.
         
     Returns:
         Tuple of (ExtractionResult, ImageExtractionResult)
@@ -177,15 +187,16 @@ def process_pdf_with_images(
     """
     logger.info(f"Processing PDF with images: {pdf_path}")
     
-    # Step 1: Extract text
-    text_extractor = PDFExtractor()
-    text_result = text_extractor.extract(pdf_path)
+    if backend is None:
+        backend = get_extraction_backend()
     
-    logger.info(f"Extracted {text_result.total_pages} pages of text")
+    # Step 1: Extract text
+    text_result = backend.extract_text(pdf_path)
+    
+    logger.info(f"Extracted {text_result.total_pages} pages of text (backend: {backend.name})")
     
     # Step 2: Extract images
-    image_extractor = ImageExtractor(output_dir=image_output_dir) if image_output_dir else ImageExtractor()
-    image_result = image_extractor.extract(pdf_path, job_id=job_id)
+    image_result = backend.extract_images(pdf_path, job_id=job_id, output_dir=image_output_dir)
     
     logger.info(f"Extracted {image_result.total_extracted} images, filtered {image_result.total_filtered} small artifacts")
     
@@ -208,6 +219,7 @@ def process_pdf_full(
     job_id: str | None = None,
     image_output_dir: str | None = None,
     generate_context: bool = True,
+    backend: ExtractionBackend | None = None,
 ) -> tuple[ExtractionResult, ImageExtractionResult, GlobalContext | None]:
     """
     Full PDF processing pipeline: text, images, and global context.
@@ -218,11 +230,15 @@ def process_pdf_full(
     3. Injects image placeholders into the text stream
     4. Generates global context summary via Gemini
     
+    Uses the configured extraction backend (PDF_EXTRACTOR_BACKEND env var).
+    
     Args:
         pdf_path: Path to the PDF file to process
         job_id: Optional job ID for organizing image output
         image_output_dir: Optional base directory for extracted images
         generate_context: Whether to generate global context (default: True)
+        backend: Optional extraction backend override. If None, uses
+                 the backend configured via PDF_EXTRACTOR_BACKEND env var.
         
     Returns:
         Tuple of (ExtractionResult, ImageExtractionResult, GlobalContext or None)
@@ -234,11 +250,15 @@ def process_pdf_full(
     pdf_path = Path(pdf_path)
     logger.info(f"Full PDF processing pipeline: {pdf_path}")
     
+    if backend is None:
+        backend = get_extraction_backend()
+    
     # Steps 1-3: Extract text and images
     text_result, image_result = process_pdf_with_images(
         pdf_path,
         job_id=job_id,
         image_output_dir=image_output_dir,
+        backend=backend,
     )
     
     # Step 4: Generate global context

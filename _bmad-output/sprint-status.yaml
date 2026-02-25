@@ -17,8 +17,15 @@ sprint_1_status:
   1-2-local-dev-gemini: done
   4-1-a2a-protocol-definition: done
 
-# Sprint 2 (CURRENT)
+# Sprint 2 (COMPLETED)
 development_status:
   2-1-pdf-text-extraction: done
   2-2-image-region-extraction: done
   3-1-global-context-generation: done
+
+sprint_2_notes: |
+  All 3 stories completed and approved.
+  93 tests passing (39 PDF + 26 Image + 28 Context).
+  Extraction backend abstraction added (strategy pattern via PDF_EXTRACTOR_BACKEND env var)
+  to support future Docling migration (Epic 7). 28 additional backend tests (121 total).
+  Sprint completed: 2026-02-25

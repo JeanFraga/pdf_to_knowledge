@@ -17,9 +17,9 @@
 
 | ID | Story | Status | Est. Days | Actual |
 |:---|:------|:-------|:----------|:-------|
-| 2.1 | PDF Text Extraction Service | 🔲 Not Started | 2-3 | — |
-| 2.2 | Image Region Extraction | 🔲 Not Started | 2-3 | — |
-| 3.1 | Global Context Generation | 🔲 Not Started | 2-3 | — |
+| 2.1 | PDF Text Extraction Service | ✅ Done | 2-3 | 1 |
+| 2.2 | Image Region Extraction | ✅ Done | 2-3 | 1 |
+| 3.1 | Global Context Generation | ✅ Done | 2-3 | 1 |
 
 **Status Legend:** 🔲 Not Started | 🔄 In Progress | ✅ Done | ⛔ Blocked
 
@@ -117,13 +117,14 @@
 
 ## Definition of Done (Sprint Level)
 
-- [ ] All acceptance criteria for stories 2.1, 2.2, 3.1 met
-- [ ] Ingestion Agent can process a sample PDF end-to-end
-- [ ] Text extracted with headers/footers removed
-- [ ] Images extracted and placeholders inserted
-- [ ] Global context generated via Gemini
-- [ ] Unit tests passing for all new modules
-- [ ] Code committed and pushed to main branch
+- [x] All acceptance criteria for stories 2.1, 2.2, 3.1 met
+- [x] Ingestion Agent can process a sample PDF end-to-end
+- [x] Text extracted with headers/footers removed
+- [x] Images extracted and placeholders inserted
+- [x] Global context generated via Gemini
+- [x] Unit tests passing for all new modules
+- [x] Code committed and pushed to main branch
+- [x] Extraction backend abstraction added (strategy pattern via .env)
 
 ---
 

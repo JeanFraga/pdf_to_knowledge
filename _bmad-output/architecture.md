@@ -25,6 +25,7 @@ adk init database-agent
 | **Framework** | Google ADK (Agent Development Kit) | Latest | All | User constraint; provides standardized agentic patterns. |
 | **Communication** | A2A Protocol (Agent-to-Agent) | ADK Std | All | User constraint; enables structured inter-agent collaboration. |
 | **Ingestion Agent** | Python-based ADK Agent | 3.11+ | Ingestion, Chunking | Handles PDF parsing, semantic segmentation, and context injection. |
+| **PDF Extraction** | Configurable backend (pypdf or Docling) | Latest | Ingestion | `PDF_EXTRACTOR_BACKEND` env var selects strategy. pypdf (default, fast), Docling (ML-based, higher quality). |
 | **Database Agent** | Python-based ADK Agent with MCP | 3.11+ | Storage, Retrieval | Encapsulates database logic via Model Context Protocol (MCP). |
 | **Graph Database** | Neo4j (Self-hosted on GKE or Aura) | 5.x | Storage | Stores relationships between concepts and chunks. |
 | **NoSQL Database** | Google Cloud Firestore | Native | Storage | Stores raw chunks, metadata, and processing status. |
@@ -73,6 +74,7 @@ pdf_to_knowledge/
 | **E4: Structured Storage** | `database-agent` | `infrastructure` (Firestore/Neo4j) |
 | **E5: Infrastructure Setup** | `infrastructure` | `terraform` |
 | **E6: CLI Interface** | `ingestion-agent` | `infrastructure` (Cloud Run/GKE) |
+| **E7: Docling Backend** | `ingestion-agent` | `extraction_backend.py` (Strategy Pattern) |
 
 ## Technology Stack Details
 
@@ -212,6 +214,7 @@ cd infrastructure/terraform && terraform apply
 *   **ADR-001: Use of Google ADK:** Chosen to align with user constraints and leverage standardized agentic patterns.
 *   **ADR-002: Separation of Ingestion and Storage:** Split into two agents to allow the storage layer to evolve (e.g., changing DBs) without affecting the complex ingestion logic.
 *   **ADR-003: Dual Database Strategy:** Using Firestore for content and Neo4j for relationships provides the best of both worlds (retrieval speed vs. relational depth).
+*   **ADR-004: Configurable PDF Extraction Backend:** Strategy pattern via `PDF_EXTRACTOR_BACKEND` env var enables swapping between pypdf (fast, lightweight) and Docling (ML-based, higher quality) without changing pipeline code. pypdf is the default; Docling will be implemented in Epic 7. The abstraction lives in `extraction_backend.py` with a factory function `get_extraction_backend()`.
 
 ---
 

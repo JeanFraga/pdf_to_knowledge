@@ -9,6 +9,7 @@ services:
       - GOOGLE_API_KEY=${GEMINI_API_KEY}
       - GEMINI_API_KEY=${GEMINI_API_KEY}
       - INGESTION_AGENT_MODEL=${INGESTION_AGENT_MODEL:-gemini-2.0-flash}
+      - PDF_EXTRACTOR_BACKEND=${PDF_EXTRACTOR_BACKEND:-pypdf}
       - DATABASE_AGENT_URL=http://database-agent:8080
     ports:
       - "8081:8080"

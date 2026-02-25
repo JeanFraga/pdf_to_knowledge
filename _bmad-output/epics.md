@@ -20,6 +20,7 @@ This document provides the complete epic and story breakdown for pdf_to_knowledg
 - **Epic 4: Structured Storage & Retrieval** (Database Agent & MCP)
 - **Epic 5: Visual & Tone Extraction** (Enrichment)
 - **Epic 6: CLI & Orchestration** (User Interface)
+- **Epic 7: Advanced PDF Processing with Docling** (ML-based Extraction)
 
 ---
 
@@ -51,6 +52,7 @@ This document provides the complete epic and story breakdown for pdf_to_knowledg
 - **Epic 4 (Storage):** FR10, FR11
 - **Epic 5 (Enrichment):** FR8, FR9, FR12
 - **Epic 6 (CLI):** FR1, FR14 (Interface)
+- **Epic 7 (Docling):** FR2, FR3, FR4, FR15 (Enhanced extraction quality)
 
 ---
 
@@ -308,14 +310,129 @@ So that I know when it's finished.
 
 ---
 
+## Epic 7: Advanced PDF Processing with Docling
+
+**Goal:** Implement the Docling-based extraction backend to replace pypdf with ML-powered document understanding, providing superior text extraction, layout analysis, table parsing, and image detection. The backend is swappable via `PDF_EXTRACTOR_BACKEND` environment variable.
+
+**Prerequisite:** Extraction backend abstraction (completed in Sprint 2 — `extraction_backend.py` with strategy pattern).
+
+### Story 7.1: Docling Integration & DoclingBackend Implementation
+
+As a Developer,
+I want to implement the `DoclingBackend` class using the Docling library,
+So that the system can use ML-based layout analysis for PDF text extraction.
+
+**Acceptance Criteria:**
+**Given** `PDF_EXTRACTOR_BACKEND=docling` in the environment
+**When** the ingestion pipeline processes a PDF
+**Then** the `DoclingBackend.extract_text()` should return an `ExtractionResult` with cleaned text
+**And** paragraph structure should be preserved using Docling's layout model
+**And** headers, footers, and page numbers should be detected via layout analysis (not just regex heuristics)
+**And** the result should be compatible with all downstream consumers (`process_pdf_full()`, `ContextGenerator`)
+
+**Technical Notes:**
+- Install `docling` package (pulls PyTorch/ONNX for layout models)
+- Use `DocumentConverter` as the primary entry point
+- Map Docling's `DoclingDocument` structure to existing `ExtractionResult` / `PageText` dataclasses
+- Docling uses DocLayNet-based models for layout classification (headings, paragraphs, tables, figures, page headers/footers)
+- Headers/footers are classified by the model rather than frequency heuristics — populate `detected_headers` / `detected_footers` from Docling's classifications
+- First-run downloads layout models (~200-500 MB) — handle gracefully or bake into Docker image
+- Use Docling's Markdown export as intermediate format for structured text
+
+### Story 7.2: Docling Image & Figure Extraction
+
+As a Developer,
+I want the `DoclingBackend` to extract images and figures using Docling's layout analysis,
+So that charts, diagrams, and figures are detected by their visual role (not just /XObject resources).
+
+**Acceptance Criteria:**
+**Given** a PDF with embedded charts, diagrams, or figures
+**When** the `DoclingBackend.extract_images()` processes it
+**Then** figures identified by layout analysis should be extracted as image files
+**And** small artifacts (< 100x100px) should still be filtered
+**And** `ImageMetadata` objects should be created with correct page, dimensions, and format
+**And** the result should be compatible with `ImageExtractionResult` and placeholder injection
+
+**Technical Notes:**
+- Docling identifies figure regions via layout classification, not just /XObject parsing
+- This catches rendered charts (e.g., matplotlib output) that pypdf misses since they aren't embedded as XObjects
+- For images that are XObjects, Docling extracts them directly
+- For detected figure regions that aren't XObjects, render the page region to an image (via `pdf2image` or Docling's built-in rendering)
+- Map extracted figures to `ImageMetadata` with sequential IDs (img_001, img_002)
+- Store to same output directory pattern: `/tmp/p2k-images/<job_id>/`
+
+### Story 7.3: Docling Table Extraction
+
+As a Developer,
+I want the system to extract tables as structured data using Docling,
+So that tabular information is preserved in a machine-readable format instead of mangled text.
+
+**Acceptance Criteria:**
+**Given** a PDF containing tables
+**When** the `DoclingBackend` processes it
+**Then** tables should be extracted as structured Markdown tables in the text stream
+**And** the original table structure (rows, columns, headers) should be preserved
+**And** table locations in the text should maintain reading order
+
+**Technical Notes:**
+- Docling uses TableFormer model for table structure recognition
+- Tables are exported as Markdown tables by default when using `DocumentConverter.convert()` with Markdown export
+- This is a major advantage over pypdf, which typically garbles table content into disconnected strings
+- Consider adding a `TableMetadata` model in the future for programmatic table access
+- For now, Markdown table format in the text stream is sufficient
+
+### Story 7.4: Docker Image & Model Caching for Docling
+
+As a Developer,
+I want the Docling ML models to be baked into the Docker image,
+So that first-run latency is eliminated and the container works in air-gapped environments.
+
+**Acceptance Criteria:**
+**Given** a fresh container start with `PDF_EXTRACTOR_BACKEND=docling`
+**When** the first PDF is processed
+**Then** no model download should occur at runtime
+**And** the container should be able to process PDFs immediately
+**And** container size should be documented (expected: 3-5 GB)
+
+**Technical Notes:**
+- Add a Dockerfile stage that pre-downloads Docling models during build
+- Models are cached in `~/.cache/docling/` (or configurable via `DOCLING_CACHE_DIR`)
+- Run a dummy conversion during Docker build to trigger model download
+- Consider a multi-stage build: `docling` image extends the base `ingestion-agent` image
+- Document the size trade-off: pypdf image (~300 MB) vs docling image (~3-5 GB)
+- The base Dockerfile remains unchanged — only add a `Dockerfile.docling` or build arg
+
+### Story 7.5: Docling Backend Tests & Benchmark
+
+As a Developer,
+I want comprehensive tests and a performance benchmark comparing pypdf vs Docling extraction,
+So that the quality and speed trade-offs are documented.
+
+**Acceptance Criteria:**
+**Given** the `DoclingBackend` implementation
+**When** the test suite runs
+**Then** all existing acceptance criteria for Stories 2.1 and 2.2 should pass with the Docling backend
+**And** a benchmark script compares pypdf vs Docling on 3 sample PDFs (text-only, with images, 100+ pages)
+**And** results document: extraction quality, processing time, and output differences
+**And** all integration tests pass with both backends
+
+**Technical Notes:**
+- Reuse existing test assertions — the backend must produce the same `ExtractionResult` / `ImageExtractionResult` interfaces
+- Add parametrized tests that run against both backends: `@pytest.mark.parametrize("backend", ["pypdf", "docling"])`
+- Benchmark script: `scripts/benchmark_backends.py` that processes sample PDFs and outputs comparison table
+- Expected results: Docling ~10-30x slower, but significantly better quality on complex layouts, tables, and multi-column PDFs
+- Document results in `docs/backend-comparison.md`
+
+---
+
 ## FR Coverage Matrix
 
 | FR ID | Description | Covered By |
 | :--- | :--- | :--- |
 | FR1 | Ingest PDF via CLI | Story 6.1, 2.1 |
-| FR2 | Remove headers/footers | Story 2.1 |
-| FR3 | Extract raw text | Story 2.1 |
-| FR4 | Extract image regions | Story 2.2 |
+| FR2 | Remove headers/footers | Story 2.1, 7.1 |
+| FR3 | Extract raw text | Story 2.1, 7.1 |
+| FR4 | Extract image regions | Story 2.2, 7.2 |
 | FR5 | Semantic segmentation | Story 3.2 |
 | FR6 | Global Context summary | Story 3.1 |
 | FR7 | Inject Global Context | Story 3.3 |
@@ -332,8 +449,8 @@ So that I know when it's finished.
 
 ## Summary
 
-**Total Epics:** 6
-**Total Stories:** 13
+**Total Epics:** 7
+**Total Stories:** 18
 
 This breakdown covers all functional requirements and establishes a robust foundation for the pdf_to_knowledge pipeline. The stories are vertically sliced to deliver value incrementally, starting with infrastructure and moving through the data processing pipeline.
 
